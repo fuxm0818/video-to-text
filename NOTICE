@@ -1,0 +1,83 @@
+视频转文字 (Video to Text)
+Copyright (c) 2026 Fu Xiangming
+Licensed under the MIT License (see LICENSE).
+
+This distribution bundles third-party software. The application code itself is
+MIT-licensed; the components below remain under their own licenses.
+
+----------------------------------------------------------------------------
+FFmpeg 7.1 (separate executable, GPLv2-or-later)
+----------------------------------------------------------------------------
+The file `ffmpeg` / `ffmpeg.exe` shipped with the packaged application is an
+unmodified binary extracted from the `imageio-ffmpeg` 0.7.0 wheel on PyPI:
+
+    https://pypi.org/project/imageio-ffmpeg/0.7.0/
+
+The build reports `--enable-gpl` and therefore is distributed under the GNU
+General Public License, version 2 or later. A copy of GPLv2 is included as
+`LICENSE.GPL-2.0.txt` next to this notice. The corresponding source code for
+this FFmpeg release is available from:
+
+    https://ffmpeg.org/releases/ffmpeg-7.1.tar.xz
+
+FFmpeg is invoked as a separate process; it is not linked into the application.
+The app does not modify FFmpeg. FFmpeg copyright holders and license details:
+https://ffmpeg.org/legal.html
+
+----------------------------------------------------------------------------
+Python 3.12 runtime
+----------------------------------------------------------------------------
+Python Software Foundation License 2.0
+https://docs.python.org/3/license.html
+
+----------------------------------------------------------------------------
+PyTorch 2.14.1 / torchaudio 2.11.0
+----------------------------------------------------------------------------
+PyTorch is distributed under a combination of Apache-2.0, BSD-2-Clause,
+BSD-3-Clause, BSL-1.0, MIT and LLVM exception terms. torchaudio is BSD-licensed.
+https://github.com/pytorch/pytorch/blob/main/LICENSE
+https://github.com/pytorch/audio/blob/main/LICENSE
+
+----------------------------------------------------------------------------
+FunASR 1.4.16 (MIT)
+----------------------------------------------------------------------------
+https://github.com/modelscope/FunASR/blob/main/LICENSE
+
+----------------------------------------------------------------------------
+ModelScope 1.40.2 (Apache-2.0)
+----------------------------------------------------------------------------
+https://github.com/modelscope/modelscope/blob/master/LICENSE
+
+----------------------------------------------------------------------------
+Transformers 5.20.2 (Apache-2.0)
+----------------------------------------------------------------------------
+https://github.com/huggingface/transformers/blob/main/LICENSE
+
+----------------------------------------------------------------------------
+NumPy 2.5.4 (BSD-3-Clause and other permissive licenses)
+----------------------------------------------------------------------------
+https://numpy.org/doc/stable/license.html
+
+----------------------------------------------------------------------------
+PyInstaller 6.22.3 (GPLv2-or-later with a bootloader exception)
+----------------------------------------------------------------------------
+The bootloader exception permits distribution of bundled applications under
+other terms. https://pyinstaller.org/en/stable/license.html
+
+----------------------------------------------------------------------------
+Speech models (NOT bundled; downloaded on first run)
+----------------------------------------------------------------------------
+The app downloads these models from ModelScope into the user's cache at first
+run. They are not part of this distribution. Review each model card before use:
+
+  iic/speech_seaco_paraformer_large_asr_nat-zh-cn-16k-common-vocab8404-pytorch
+  iic/speech_fsmn_vad_zh-cn-16k-common-pytorch
+  iic/punc_ct-transformer_cn-en-common-vocab471067-large
+
+  https://modelscope.cn/models/iic/speech_seaco_paraformer_large_asr_nat-zh-cn-16k-common-vocab8404-pytorch
+  https://modelscope.cn/models/iic/speech_fsmn_vad_zh-cn-16k-common-pytorch
+  https://modelscope.cn/models/iic/punc_ct-transformer_cn-en-common-vocab471067-large
+
+Other transitive dependencies (librosa, soundfile, scipy, jieba, sentencepiece,
+and others) remain under their respective licenses; see the package metadata
+of each project for details.

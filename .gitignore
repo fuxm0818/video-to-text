@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.build-tools/
+dist/
+build/
+
+# Bundled ffmpeg binary (fetched by packaging/fetch_ffmpeg.py)
+packaging/ffmpeg/*
+!packaging/ffmpeg/.gitkeep
+!packaging/ffmpeg/LICENSE.GPL-2.0.txt
+
+# Local output and logs
+output/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db

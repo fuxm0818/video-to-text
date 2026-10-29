@@ -1,0 +1,44 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "video-to-text"
+version = "0.1.0"
+description = "本地视频/音频转写：FunASR 语音识别，导出 Markdown、Word 和音频"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+authors = [{ name = "Fu Xiangming" }]
+keywords = ["asr", "funasr", "transcription", "video", "speech-to-text"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Environment :: MacOS X",
+  "Environment :: Win32 (MS Windows)",
+  "Operating System :: MacOS",
+  "Operating System :: Microsoft :: Windows",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Multimedia :: Sound/Audio :: Speech",
+]
+dependencies = [
+  "funasr==1.4.16",
+  "modelscope==1.40.2",
+  "numpy==2.5.4",
+  "torch==2.14.1",
+  "torchaudio==2.11.0",
+]
+
+[project.optional-dependencies]
+build = ["pyinstaller>=6.10"]
+
+[project.scripts]
+video-to-text = "video_to_text.app:main"
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+video_to_text = ["web/*"]
