@@ -126,7 +126,7 @@ macOS 产物是 `dist/视频转文字.app`，Windows 产物是 `dist/VideoToText
 
 ## 验证状态（2026-10-29）
 
-- macOS Apple Silicon（8 核 / 16 GB）：已验证原生 Qt 窗口从源码与打包版启动、渲染；源码窗口真实 29 秒中文口播端到端（md + docx + m4a，3 段，覆盖 85%），取消任务后状态为“已取消”；打包 `.app` 自检全项通过（ffmpeg、torch / FunASR / ModelScope、多进程、音频抽取与 M4A、断句标点、Markdown、DOCX、Qt），打包版命令行真实转写结果与源码一致；zip 解压后 `codesign --verify --deep --strict` 通过，解压出的 `.app` 可启动并通过自检。
+- macOS Apple Silicon（8 核 / 16 GB）：已验证原生 Qt 窗口从源码与打包版启动、渲染；源码窗口真实 29 秒中文口播端到端（md + docx + m4a，3 段，覆盖 85%），取消任务后状态为“已取消”；打包 `.app` 自检全项通过（ffmpeg、torch / FunASR / ModelScope、多进程、音频抽取与 M4A、断句标点、Markdown、DOCX、Qt），打包版命令行真实转写通过（同一素材，3 段，覆盖 85%）；zip 解压后 `codesign --verify --deep --strict` 通过，解压出的 `.app` 可启动并通过自检。
 - 长时间素材：同一转写内核跑过真实 28 分钟中文音频（396 段，覆盖 98%）。
 - Windows x64：已配置 `.github/workflows/build.yml`，但尚未在 GitHub Actions 实际运行，开发环境也没有 Windows 实机；首次发布前需要在 Windows 上小批量试跑。
 
