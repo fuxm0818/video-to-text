@@ -16,6 +16,11 @@ packaging/ffmpeg/*
 output/
 *.log
 
+# Release artifacts
+release/
+VideoToText-*.zip
+SHA256SUMS.txt
+
 # OS
 .DS_Store
 Thumbs.db

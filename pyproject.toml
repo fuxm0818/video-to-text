@@ -26,6 +26,7 @@ dependencies = [
   "numpy==2.5.4",
   "torch==2.14.1",
   "torchaudio==2.11.0",
+  "PySide6-Essentials==6.9.3",
 ]
 
 [project.optional-dependencies]
@@ -41,4 +42,4 @@ package-dir = { "" = "src" }
 where = ["src"]
 
 [tool.setuptools.package-data]
-video_to_text = ["web/*"]
+video_to_text = ["assets/*", "assets/icons/*"]

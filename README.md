@@ -2,7 +2,7 @@
 
 把本地视频或音频里的说话声，转成可编辑的 Markdown / Word 文稿，并同时导出音频文件。
 
-全部在本机完成：不上传、不排队、不需要账号。基于 FunASR（Paraformer + FSMN-VAD + CT-Punc）做中文语音识别。
+原生桌面窗口，不需要浏览器；全部在本机完成，不上传、不排队、不需要账号。基于 FunASR（Paraformer + FSMN-VAD + CT-Punc）做中文语音识别。
 
 ![界面截图](docs/screenshot.png)
 
@@ -59,10 +59,10 @@
 
 ## 使用
 
-1. **选择素材**：点“选择视频 / 音频”选文件，或点“选择文件夹”递归读取；也可以直接粘贴路径。
+1. **选择素材**：点“选择视频 / 音频”选文件，或点“选择文件夹”递归读取；也可以把文件、文件夹直接拖进窗口。
 2. **输出设置**：选择保存文件夹、文稿格式（Markdown / Word）、是否同时导出音频（M4A / WAV / 不导出）。
 3. **开始转写**：进度面板会显示每个文件的状态；可以随时取消。
-4. 完成后点“打开输出文件夹”，或在任务列表里直接下载单个文件。
+4. 完成后点“打开输出文件夹”，或点任务行里的 MD / DOCX / 音频按钮直接打开对应文件。
 
 高级选项里可以设置同时转写的文件数（1–4）和是否强制重新转写。
 
@@ -92,13 +92,13 @@ video-to-text transcribe "/path/to/视频目录" -o output --formats md,docx --a
 - `--audio m4a|wav|none`：音频导出格式
 - `--force`：已有文稿也重新转写
 
-启动图形界面（浏览器打开 `http://127.0.0.1:8765/`）：
+启动桌面窗口：
 
 ```bash
 video-to-text
 ```
 
-其他参数：`--port`、`--output`、`--no-browser`、`--self-test`。
+其他参数：`--output <目录>`（覆盖默认保存位置）、`--self-test`（安装自检）。
 
 ### 从源码打包
 
@@ -111,7 +111,7 @@ macOS 产物是 `dist/视频转文字.app`，Windows 产物是 `dist/VideoToText
 
 ## 隐私
 
-- 服务只监听 `127.0.0.1`，并校验 Host、Origin 与一次性会话 token。
+- 界面是本地桌面窗口，程序不监听任何网络端口，也不会启动本地 Web 服务。
 - 音视频与文稿不会离开本机。
 - 唯一的联网行为是首次运行时从 ModelScope 下载模型；之后完全离线。
 
@@ -126,8 +126,9 @@ macOS 产物是 `dist/视频转文字.app`，Windows 产物是 `dist/VideoToText
 
 ## 验证状态（2026-10-29）
 
-- macOS Apple Silicon：已完整验证——打包自检、GUI 端到端（选择文件 → 转写 → 下载 md/docx/音频）、真实 28 分钟中文音频（396 段，覆盖 98%）、zip 解压后签名与启动校验。
-- Windows x64：由 `.github/workflows/build.yml` 构建；开发环境没有 Windows 实机，发布前未做 Windows 实机长时间验证。
+- macOS Apple Silicon（8 核 / 16 GB）：已验证原生 Qt 窗口从源码与打包版启动、渲染；源码窗口真实 29 秒中文口播端到端（md + docx + m4a，3 段，覆盖 85%），取消任务后状态为“已取消”；打包 `.app` 自检全项通过（ffmpeg、torch / FunASR / ModelScope、多进程、音频抽取与 M4A、断句标点、Markdown、DOCX、Qt），打包版命令行真实转写结果与源码一致；zip 解压后 `codesign --verify --deep --strict` 通过，解压出的 `.app` 可启动并通过自检。
+- 长时间素材：同一转写内核跑过真实 28 分钟中文音频（396 段，覆盖 98%）。
+- Windows x64：已配置 `.github/workflows/build.yml`，但尚未在 GitHub Actions 实际运行，开发环境也没有 Windows 实机；首次发布前需要在 Windows 上小批量试跑。
 
 ## 开发与测试
 
@@ -135,17 +136,18 @@ macOS 产物是 `dist/视频转文字.app`，Windows 产物是 `dist/VideoToText
 python -m unittest discover -s tests -v
 ```
 
-测试不加载模型，覆盖 ffmpeg 探测回退、断句、Markdown/DOCX 结构、配置校验、本地服务的 token / Host / Origin 校验等。
+测试不加载模型，覆盖 ffmpeg 探测回退、断句、Markdown/DOCX 结构、配置校验，以及离屏 Qt 窗口冒烟测试（添加素材、输出格式校验、移除、设置持久化）。
 
 ## 许可
 
 应用代码使用 MIT License，见 [LICENSE](LICENSE)。
 
-打包产物内含第三方组件，其中 ffmpeg 是以独立可执行文件形式分发的 GPLv2+ 构建；完整清单与许可证说明见 [NOTICE](NOTICE)，GPLv2 全文见压缩包内的 `LICENSE.GPL-2.0.txt`（源码中位于 `packaging/ffmpeg/LICENSE.GPL-2.0.txt`）。
+打包产物内含第三方组件：ffmpeg 是以独立可执行文件形式分发的 GPLv2+ 构建；界面库 Qt / PySide6 以 LGPLv3 动态链接、未修改并随包分发。完整清单与许可证说明见 [NOTICE](NOTICE)，许可证全文见压缩包内的 `LICENSE.GPL-2.0.txt` 与 `LICENSE.LGPL-3.0.txt`（源码中位于 `packaging/`）。
 
 ## 致谢
 
 - [FunASR](https://github.com/modelscope/FunASR) 与 [ModelScope](https://modelscope.cn/)：语音识别、端点检测与标点模型
 - [PyTorch](https://pytorch.org/)：推理运行时
+- [Qt for Python (PySide6)](https://doc.qt.io/qtforpython/)：原生桌面界面
 - [FFmpeg](https://ffmpeg.org/)：音频抽取与转码
 - [imageio-ffmpeg](https://github.com/imageio/imageio-ffmpeg)：跨平台静态 ffmpeg 构建

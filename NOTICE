@@ -65,6 +65,19 @@ The bootloader exception permits distribution of bundled applications under
 other terms. https://pyinstaller.org/en/stable/license.html
 
 ----------------------------------------------------------------------------
+Qt 6.9.3 / PySide6-Essentials 6.9.3 (LGPLv3)
+----------------------------------------------------------------------------
+The desktop window is built with Qt for Python (PySide6), which is distributed
+under the GNU Lesser General Public License, version 3. The Qt libraries are
+linked dynamically, are unmodified, and are bundled inside the application
+folder so that they can be replaced by the user. A copy of the LGPLv3 is
+included as `LICENSE.LGPL-3.0.txt` next to this notice.
+
+Qt source code:  https://download.qt.io/official_releases/qt/6.9/6.9.3/single/
+PySide6 source:  https://download.qt.io/official_releases/QtForPython/pyside6/PySide6-6.9.3-src/
+Copyright (C) The Qt Company Ltd. and other contributors.
+
+----------------------------------------------------------------------------
 Speech models (NOT bundled; downloaded on first run)
 ----------------------------------------------------------------------------
 The app downloads these models from ModelScope into the user's cache at first

@@ -7,11 +7,11 @@ from PyInstaller.utils.hooks import collect_data_files, collect_submodules
 
 ROOT = Path(SPECPATH).parent
 SRC = ROOT / "src"
-WEB = SRC / "video_to_text" / "web"
+ASSETS = SRC / "video_to_text" / "assets"
 FFMPEG = ROOT / "packaging" / "ffmpeg"
 ICON = ROOT / "packaging" / ("icon.ico" if sys.platform == "win32" else "icon.icns")
 
-datas = [(str(WEB), "video_to_text/web")]
+datas = [(str(ASSETS), "video_to_text/assets")]
 datas += collect_data_files("funasr")
 datas += collect_data_files("modelscope")
 binaries = [
@@ -26,8 +26,17 @@ for package in ("funasr", "modelscope", "transformers", "torchaudio"):
 
 excludes = [
     "tkinter", "matplotlib", "IPython", "jupyter", "notebook", "pytest",
-    "PyQt5", "PyQt6", "PySide2", "PySide6", "tensorflow", "jax", "flax",
+    "PyQt5", "PyQt6", "PySide2", "tensorflow", "jax", "flax",
     "onnx", "onnxruntime", "cv2", "tensorboard", "mediapipe",
+    "PySide6.QtWebEngineCore", "PySide6.QtWebEngineWidgets", "PySide6.QtWebChannel",
+    "PySide6.QtQml", "PySide6.QtQuick", "PySide6.QtQuickWidgets", "PySide6.Qt3DCore",
+    "PySide6.Qt3DRender", "PySide6.QtCharts", "PySide6.QtDataVisualization",
+    "PySide6.QtMultimedia", "PySide6.QtMultimediaWidgets", "PySide6.QtPdf",
+    "PySide6.QtPdfWidgets", "PySide6.QtSql", "PySide6.QtTest", "PySide6.QtBluetooth",
+    "PySide6.QtNfc", "PySide6.QtPositioning", "PySide6.QtSerialPort",
+    "PySide6.QtSensors", "PySide6.QtRemoteObjects", "PySide6.QtScxml",
+    "PySide6.QtStateMachine", "PySide6.QtHelp", "PySide6.QtDesigner",
+    "PySide6.QtUiTools", "PySide6.QtOpenGL", "PySide6.QtOpenGLWidgets",
 ]
 
 a = Analysis(

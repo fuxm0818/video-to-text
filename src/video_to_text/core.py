@@ -1,7 +1,7 @@
 """Transcription core: ffmpeg audio extraction, FunASR, Markdown/DOCX output.
 
-The heavy imports (torch, funasr, modelscope) are deliberately lazy so the web
-server starts instantly and tests can run without the ASR stack installed.
+The heavy imports (torch, funasr, modelscope) are deliberately lazy so the
+desktop window starts instantly and tests can run without the ASR stack.
 """
 from __future__ import annotations
 

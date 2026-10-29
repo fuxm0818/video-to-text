@@ -1,25 +1,28 @@
-"""Command line entry point, local server bootstrap and self-test."""
+"""Command line entry point and self-test."""
 from __future__ import annotations
 
 import argparse
 import multiprocessing
+import queue
 import sys
 import tempfile
-import threading
-import urllib.error
-import urllib.request
 import xml.etree.ElementTree as ET
 import zipfile
 from pathlib import Path
 
-from . import APP_NAME, __version__, config, core
+from . import APP_NAME, __version__, core
 from .docx import write_docx
-from .server import AppContext, create_server, serve
 
 
 def _say(message: str) -> None:
     if sys.stdout:
         print(message, flush=True)
+
+
+def _spawn_probe(q) -> None:
+    import os
+
+    q.put(os.getpid())
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -30,8 +33,6 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--version", action="version", version=f"{APP_NAME} {__version__}")
     parser.add_argument("--self-test", action="store_true", help="检查安装是否完整后退出")
-    parser.add_argument("--no-browser", action="store_true", help="启动界面时不自动打开浏览器")
-    parser.add_argument("--port", type=int, default=8765, help="本地界面端口，默认 8765")
     parser.add_argument("--output", help="界面默认输出文件夹")
 
     sub = parser.add_subparsers(dest="command")
@@ -52,15 +53,9 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "transcribe":
         return cli_transcribe(args)
 
-    ctx = AppContext(output_dir=args.output)
-    try:
-        folder = Path(ctx.settings["output_dir"]).expanduser()
-        folder.mkdir(parents=True, exist_ok=True)
-    except OSError:
-        pass
-    core.append_log(f"应用启动，版本 {__version__}")
-    serve(ctx, port=args.port, open_browser=not args.no_browser)
-    return 0
+    from .gui import run_gui
+
+    return run_gui(output_dir=args.output)
 
 
 def _parse_formats(text: str) -> list[str]:
@@ -179,6 +174,25 @@ def self_test() -> bool:
         except Exception as exc:
             fail(f"导入 {module} 失败：{exc}")
 
+    try:
+        ctx = multiprocessing.get_context("spawn")
+        probe_q = ctx.Queue()
+        probe = ctx.Process(target=_spawn_probe, args=(probe_q,))
+        probe.start()
+        probe.join(timeout=60)
+        if probe.is_alive():
+            probe.kill()
+            fail("多进程检查超时")
+        else:
+            try:
+                child_pid = probe_q.get(timeout=10)
+                note(f"多进程 OK（子进程 {child_pid}）")
+            except queue.Empty:
+                fail(f"多进程检查失败：子进程退出码 {probe.exitcode}")
+        probe_q.close()
+    except Exception as exc:
+        fail(f"多进程检查异常：{exc}")
+
     with tempfile.TemporaryDirectory(prefix="v2t-selftest-") as tmp:
         tmpdir = Path(tmp)
         try:
@@ -251,48 +265,18 @@ def self_test() -> bool:
         except Exception as exc:
             fail(f"文稿导出检查失败：{exc}")
 
-        try:
-            ctx = AppContext(output_dir=str(tmpdir), check_models=False,
-                             token="self-test-token")
-            httpd = create_server(ctx, 0)
-            port = httpd.server_address[1]
-            thread = threading.Thread(target=httpd.serve_forever, daemon=True)
-            thread.start()
-            url = f"http://127.0.0.1:{port}"
-            try:
-                with urllib.request.urlopen(url + "/api/health", timeout=5) as resp:
-                    health = resp.read().decode()
-                if '"ok": true' not in health:
-                    fail("本地服务健康检查失败")
-                else:
-                    note("本地服务 OK")
-                try:
-                    urllib.request.urlopen(url + "/api/state", timeout=5)
-                    fail("本地服务未拦截无令牌请求")
-                except urllib.error.HTTPError as exc:
-                    if exc.code == 403:
-                        note("本地服务权限检查 OK")
-                    else:
-                        fail(f"本地服务权限检查返回 {exc.code}")
-                req = urllib.request.Request(
-                    url + "/api/state", headers={"X-V2T-Token": "self-test-token"}
-                )
-                with urllib.request.urlopen(req, timeout=5) as resp:
-                    state = resp.read().decode()
-                if '"settings"' not in state:
-                    fail("本地服务状态接口异常")
-                with urllib.request.urlopen(url + "/", timeout=5) as resp:
-                    page = resp.read().decode()
-                if "self-test-token" not in page or "视频转文字" not in page:
-                    fail("界面页面检查失败")
-                else:
-                    note("界面页面 OK")
-            finally:
-                httpd.shutdown()
-                httpd.server_close()
-                ctx.manager.shutdown()
-        except Exception as exc:
-            fail(f"本地服务检查失败：{exc}")
+    try:
+        from PySide6.QtCore import qVersion
+
+        note(f"Qt {qVersion()} / PySide6")
+    except Exception as exc:
+        fail(f"导入 Qt 界面库失败：{exc}")
+
+    icon = Path(__file__).resolve().parent / "assets" / "icon.png"
+    if icon.is_file() and icon.stat().st_size > 0:
+        note(f"应用图标 OK（{icon.stat().st_size} B）")
+    else:
+        fail(f"应用图标缺失：{icon}")
 
     note("SELF-TEST " + ("OK" if ok else "FAILED"))
     log = core.log_path().with_name("self-test.log")

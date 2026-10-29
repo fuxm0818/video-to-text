@@ -25,7 +25,14 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - name: Install Qt for the UI smoke tests
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libegl1 libgl1
+          python -m pip install PySide6-Essentials==6.9.3
       - name: Unit tests (no ASR stack required)
+        env:
+          QT_QPA_PLATFORM: offscreen
         run: python -m unittest discover -s tests -v
 
   macos:
@@ -49,6 +56,12 @@ jobs:
         run: python packaging/fetch_ffmpeg.py
       - name: Build .app
         run: python -m PyInstaller packaging/video_to_text.spec --noconfirm --distpath dist --workpath build
+      - name: Self-test packaged app
+        run: |
+          "dist/视频转文字.app/Contents/MacOS/VideoToText" --self-test || {
+            tail -80 "$HOME/Library/Logs/video-to-text/launch.log"
+            exit 1
+          }
       - name: Verify ad-hoc signature
         run: |
           codesign -dv --verbose=2 "dist/视频转文字.app"
@@ -57,7 +70,7 @@ jobs:
         run: |
           mkdir -p release
           cp -R "dist/视频转文字.app" release/
-          cp LICENSE NOTICE packaging/ffmpeg/LICENSE.GPL-2.0.txt release/
+          cp LICENSE NOTICE packaging/ffmpeg/LICENSE.GPL-2.0.txt packaging/LICENSE.LGPL-3.0.txt release/
           ditto -c -k --sequesterRsrc release VideoToText-macos-arm64.zip
           shasum -a 256 VideoToText-macos-arm64.zip
       - uses: actions/upload-artifact@v4
@@ -86,10 +99,18 @@ jobs:
         run: python packaging/fetch_ffmpeg.py
       - name: Build windowed executable
         run: python -m PyInstaller packaging/video_to_text.spec --noconfirm --distpath dist --workpath build
+      - name: Self-test packaged app
+        shell: pwsh
+        run: |
+          $p = Start-Process -FilePath "dist\VideoToText\VideoToText.exe" -ArgumentList "--self-test" -Wait -PassThru
+          if ($p.ExitCode -ne 0) {
+            Get-Content "$env:LOCALAPPDATA\video-to-text\launch.log" -Tail 80
+            exit $p.ExitCode
+          }
       - name: Package zip with licenses
         shell: pwsh
         run: |
-          Copy-Item LICENSE, NOTICE, packaging\ffmpeg\LICENSE.GPL-2.0.txt -Destination dist\VideoToText\
+          Copy-Item LICENSE, NOTICE, packaging\ffmpeg\LICENSE.GPL-2.0.txt, packaging\LICENSE.LGPL-3.0.txt -Destination dist\VideoToText\
           Compress-Archive -Path dist\VideoToText -DestinationPath VideoToText-windows-x64.zip
           Get-FileHash VideoToText-windows-x64.zip -Algorithm SHA256
       - uses: actions/upload-artifact@v4
