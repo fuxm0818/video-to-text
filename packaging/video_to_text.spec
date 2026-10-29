@@ -17,7 +17,7 @@ datas += collect_data_files("modelscope")
 binaries = [
     (str(path), ".")
     for path in sorted(FFMPEG.glob("*"))
-    if path.is_file() and not path.name.startswith(".")
+    if path.is_file() and path.name in {"ffmpeg", "ffmpeg.exe"}
 ]
 
 hiddenimports = []
