@@ -1,5 +1,7 @@
 # 视频转文字
 
+[![build](https://github.com/fuxm0818/video-to-text/actions/workflows/build.yml/badge.svg)](https://github.com/fuxm0818/video-to-text/actions/workflows/build.yml)
+
 把本地视频或音频里的说话声，转成可编辑的 Markdown / Word 文稿，并同时导出音频文件。
 
 原生桌面窗口，不需要浏览器；全部在本机完成，不上传、不排队、不需要账号。基于 FunASR（Paraformer + FSMN-VAD + CT-Punc）做中文语音识别。
@@ -85,7 +87,7 @@
 需要 Python 3.12、ffmpeg，并安装依赖：
 
 ```bash
-git clone <repo-url>
+git clone https://github.com/fuxm0818/video-to-text.git
 cd video-to-text
 python3.12 -m venv .venv
 .venv/bin/python -m pip install -r requirements.txt
