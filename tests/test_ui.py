@@ -79,6 +79,7 @@ class MainWindowTests(unittest.TestCase):
 
     def test_initial_state(self):
         self.assertFalse(self.window.start_button.isEnabled())
+        self.assertTrue(self.window.output_button.isEnabled())
         self.assertEqual(self.window.table.topLevelItemCount(), 0)
         self.assertIs(
             self.window.content.stack.currentWidget(), self.window.empty_page
@@ -147,6 +148,23 @@ class MainWindowTests(unittest.TestCase):
         self.assertEqual(self.window._job["state"], "done")
         self.assertEqual(self.window._job["skipped"], 2)
         self.assertEqual(self.window._counts["skipped"], 2)
+
+    def test_double_click_opens_primary_output(self):
+        paths = self._add_media(1)
+        self._write_markdown(paths[0])
+        self.window.settings["formats"] = ["md"]
+        self.window.settings["audio_format"] = "none"
+        self.window._apply_settings_ui()
+        self.window._start_job()
+        self.window._refresh(force=True)
+        opened: list[str] = []
+        self.window.table.openOutputRequested.connect(
+            lambda _task_id, kind: opened.append(kind)
+        )
+        self.window.table._item_double_clicked(
+            self.window.table.topLevelItem(0), 1
+        )
+        self.assertEqual(opened, ["md"])
 
     def test_styles_build_for_both_schemes(self):
         for dark in (False, True):

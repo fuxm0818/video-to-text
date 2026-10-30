@@ -53,6 +53,30 @@ class ConfigTests(unittest.TestCase):
                 loaded = config.load_settings()
             self.assertEqual(loaded, config.defaults())
 
+    def test_default_output_lives_in_downloads(self):
+        self.assertEqual(
+            config.defaults()["output_dir"],
+            str(Path.home() / "Downloads" / "视频转文字"),
+        )
+
+    def test_legacy_default_output_migrates(self):
+        legacy = str(Path.home() / "Documents" / "Video to Text")
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "settings.json"
+            path.write_text(json.dumps({"output_dir": legacy}), encoding="utf-8")
+            with mock.patch.object(config, "config_dir", lambda: Path(tmp)):
+                loaded = config.load_settings()
+        self.assertEqual(loaded["output_dir"], str(config.default_output_dir()))
+
+    def test_custom_output_is_not_migrated(self):
+        custom = str(Path.home() / "Videos" / "我的文稿")
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "settings.json"
+            path.write_text(json.dumps({"output_dir": custom}), encoding="utf-8")
+            with mock.patch.object(config, "config_dir", lambda: Path(tmp)):
+                loaded = config.load_settings()
+        self.assertEqual(loaded["output_dir"], custom)
+
     def test_save_uses_validated_copy(self):
         with tempfile.TemporaryDirectory() as tmp:
             with mock.patch.object(config, "config_dir", lambda: Path(tmp)):

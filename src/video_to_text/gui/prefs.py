@@ -14,6 +14,7 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QLineEdit,
+    QMessageBox,
     QPushButton,
     QTabWidget,
     QVBoxLayout,
@@ -75,12 +76,18 @@ class PreferencesDialog(QDialog):
         row.setSpacing(8)
         self.output_edit = QLineEdit()
         self.output_edit.setReadOnly(True)
+        self.open_output_button = QPushButton("打开")
+        self.open_output_button.clicked.connect(self._open_output)
         self.change_output_button = QPushButton("更改…")
         self.change_output_button.clicked.connect(self._pick_output)
         row.addWidget(self.output_edit, 1)
+        row.addWidget(self.open_output_button)
         row.addWidget(self.change_output_button)
         layout.addLayout(row)
-        layout.addWidget(_hint("转写产物保存到这个文件夹；不存在的文件夹会自动创建。"))
+        layout.addWidget(_hint(
+            "转写产物默认保存在“下载/视频转文字”，也可以点“更改…”另选文件夹；"
+            "不存在的文件夹会自动创建。"
+        ))
         layout.addStretch(1)
         return page
 
@@ -205,6 +212,17 @@ class PreferencesDialog(QDialog):
             self.output_edit.setText(folder)
             self.output_edit.setToolTip(folder)
             self._changed()
+
+    def _open_output(self) -> None:
+        folder = Path(
+            self.output_edit.text().strip() or config.default_output_dir()
+        ).expanduser()
+        try:
+            folder.mkdir(parents=True, exist_ok=True)
+        except OSError as exc:
+            QMessageBox.warning(self, "无法打开文件夹", str(exc))
+            return
+        open_path(folder)
 
     def _collect(self) -> dict:
         formats = []

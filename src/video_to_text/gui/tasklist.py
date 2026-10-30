@@ -193,6 +193,7 @@ class _Row:
 
 class TaskList(QTreeWidget):
     openOutputRequested = Signal(str, str)
+    outputFolderRequested = Signal()
     revealRequested = Signal(str)
     retryRequested = Signal(str)
     copyPathRequested = Signal(str)
@@ -240,6 +241,7 @@ class TaskList(QTreeWidget):
         self._hover = ""
 
         self.itemClicked.connect(self._item_clicked)
+        self.itemDoubleClicked.connect(self._item_double_clicked)
         self.customContextMenuRequested.connect(self._context_menu)
         self.itemSelectionChanged.connect(self.selectionChanged)
         self._spin = QTimer(self)
@@ -322,6 +324,8 @@ class TaskList(QTreeWidget):
             item.setTextAlignment(column, Qt.AlignRight | Qt.AlignVCenter)
 
         tips = [str(task.get("path") or ""), str(item.data(1, ROLE_DETAIL) or "")]
+        if status in {"done", "skipped"} and task.get("outputs"):
+            tips.append("双击打开文稿")
         warnings = task.get("warnings") or []
         if warnings:
             tips.append("提示：" + "；".join(warnings))
@@ -436,6 +440,18 @@ class TaskList(QTreeWidget):
             item.setExpanded(not item.isExpanded())
             self._position_errors()
 
+    def _item_double_clicked(self, item: QTreeWidgetItem, _column: int) -> None:
+        if item.parent() is not None:
+            item = item.parent()
+        task = self._tasks.get(str(item.data(0, ROLE_ID) or ""))
+        if task is None or task["status"] not in {"done", "skipped"}:
+            return
+        outputs = task.get("outputs") or {}
+        for kind in OUTPUT_KINDS:
+            if kind in outputs:
+                self.openOutputRequested.emit(task["id"], kind)
+                return
+
     def resizeEvent(self, event) -> None:  # noqa: N802
         super().resizeEvent(event)
         self._position_errors()
@@ -471,8 +487,10 @@ class TaskList(QTreeWidget):
         task = self._tasks.get(str(item.data(0, ROLE_ID) or "")) if item is not None else None
         menu = QMenu(self)
         if task is not None:
+            open_folder = menu.addAction("打开输出文件夹")
+            open_folder.triggered.connect(lambda: self.outputFolderRequested.emit())
             reveal = menu.addAction(
-                "在访达中显示" if sys.platform == "darwin" else "打开所在文件夹"
+                "在访达中显示源文件" if sys.platform == "darwin" else "打开源文件所在文件夹"
             )
             reveal.triggered.connect(lambda: self.revealRequested.emit(str(task["path"])))
             outputs = task.get("outputs") or {}

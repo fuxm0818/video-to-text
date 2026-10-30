@@ -271,6 +271,15 @@ class MainWindow(QMainWindow):
         self.start_button.clicked.connect(self._start_or_stop)
         bar.addWidget(self.start_button)
 
+        bar.addSeparator()
+
+        self.output_button = QToolButton()
+        self.output_button.setText("输出")
+        self.output_button.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
+        self.output_button.setToolTip("打开输出文件夹")
+        self.output_button.clicked.connect(self._open_output_dir)
+        bar.addWidget(self.output_button)
+
         spacer = QWidget()
         spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
         bar.addWidget(spacer)
@@ -394,9 +403,11 @@ class MainWindow(QMainWindow):
     def _connect(self) -> None:
         self.sidebar.filterChanged.connect(self._set_filter)
         self.sidebar.locationClicked.connect(self._pick_output_dir)
+        self.sidebar.openFolderClicked.connect(self._open_output_dir)
         self.sidebar.formatClicked.connect(lambda: self._open_prefs(TAB_FORMAT))
         self.content.pathsDropped.connect(self._add_paths)
         self.table.openOutputRequested.connect(self._open_output)
+        self.table.outputFolderRequested.connect(self._open_output_dir)
         self.table.revealRequested.connect(lambda path: reveal_path(Path(path)))
         self.table.retryRequested.connect(self._retry_task)
         self.table.copyPathRequested.connect(self._copy_path)
@@ -471,6 +482,7 @@ class MainWindow(QMainWindow):
         colors = tokens.active()
         self.add_button.setIcon(icon("plus", colors["text.primary"], 16))
         self.remove_button.setIcon(icon("minus", colors["text.primary"], 16))
+        self.output_button.setIcon(icon("folder", colors["text.primary"], 16))
         self.prefs_button.setIcon(icon("gear", colors["text.secondary"], 16))
         accent_fg = styles.accent_text(accent)
         if not self._running and not self.start_button.isEnabled():
@@ -493,6 +505,9 @@ class MainWindow(QMainWindow):
         self.sidebar.set_output(
             str(self.settings.get("output_dir") or ""),
             output_summary(formats, audio),
+        )
+        self.output_button.setToolTip(
+            f"打开输出文件夹\n{self.settings.get('output_dir') or ''}"
         )
         self.force_action.blockSignals(True)
         self.force_action.setChecked(bool(self.settings.get("force")))
@@ -763,6 +778,7 @@ class MainWindow(QMainWindow):
         snapshot = self.manager.snapshot()
         job = snapshot["job"]
         tasks = snapshot["tasks"]
+        was_running = self._running
         self._job = job
         self._tasks = tasks
         self._running = bool(job["running"])
@@ -786,6 +802,13 @@ class MainWindow(QMainWindow):
 
         if job["finished_at"]:
             self._job_finished = True
+        if was_running and not self._running and job.get("state") == "done":
+            made = counts.get("done", 0) + counts.get("skipped", 0)
+            if made:
+                self._flash(
+                    f"已生成 {made} 个输出 · {display_path(str(self._output_dir()))}",
+                    6000,
+                )
 
     def _filtered(self, tasks: list[dict]) -> list[dict]:
         key = self.sidebar.current_filter()

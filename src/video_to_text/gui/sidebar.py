@@ -156,6 +156,7 @@ class Sidebar(QFrame):
     filterChanged = Signal(str)
     locationClicked = Signal()
     formatClicked = Signal()
+    openFolderClicked = Signal()
 
     def __init__(self) -> None:
         super().__init__()
@@ -188,6 +189,10 @@ class Sidebar(QFrame):
         self.location_row.clicked.connect(self.locationClicked)
         layout.addWidget(self.location_row)
 
+        self.open_row = OutputRow("打开")
+        self.open_row.clicked.connect(self.openFolderClicked)
+        layout.addWidget(self.open_row)
+
         self.format_row = OutputRow("格式")
         self.format_row.clicked.connect(self.formatClicked)
         layout.addWidget(self.format_row)
@@ -204,10 +209,14 @@ class Sidebar(QFrame):
         self.filters.set_filter(key)
 
     def set_output(self, location: str, formats: str) -> None:
-        self.location_row.set_value(display_path(location), location)
+        self.location_row.set_value(
+            display_path(location), f"{location}\n点击更改保存位置"
+        )
+        self.open_row.set_value("输出文件夹", "在文件管理器中打开输出文件夹")
         self.format_row.set_value(formats or "未选择", formats)
 
     def refresh_theme(self) -> None:
         self.filters.viewport().update()
         repolish(self.location_row)
+        repolish(self.open_row)
         repolish(self.format_row)

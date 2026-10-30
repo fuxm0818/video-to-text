@@ -20,9 +20,16 @@ def config_dir() -> Path:
 
 
 def default_output_dir() -> Path:
-    docs = Path.home() / "Documents"
-    base = docs if docs.is_dir() else Path.home()
-    return base / "Video to Text"
+    return Path.home() / "Downloads" / "视频转文字"
+
+
+def legacy_output_dirs() -> set[str]:
+    """Defaults used before 1.0; loading one of these upgrades it silently."""
+    home = Path.home()
+    return {
+        str(home / "Documents" / "Video to Text"),
+        str(home / "Video to Text"),
+    }
 
 
 def defaults() -> dict:
@@ -62,7 +69,10 @@ def load_settings() -> dict:
     try:
         with path.open(encoding="utf-8") as fh:
             data = json.load(fh)
-        return _valid(data if isinstance(data, dict) else {})
+        out = _valid(data if isinstance(data, dict) else {})
+        if out["output_dir"] in legacy_output_dirs():
+            out["output_dir"] = str(default_output_dir())
+        return out
     except (OSError, ValueError):
         return defaults()
 
