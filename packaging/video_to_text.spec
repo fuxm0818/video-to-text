@@ -8,7 +8,7 @@ from PyInstaller.utils.hooks import collect_data_files, collect_submodules
 
 ROOT = Path(SPECPATH).parent
 SRC = ROOT / "src"
-VERSION = tomllib.loads((ROOT.parent / "pyproject.toml").read_text(encoding="utf-8"))[
+VERSION = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))[
     "project"
 ]["version"]
 ASSETS = SRC / "video_to_text" / "assets"

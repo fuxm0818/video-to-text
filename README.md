@@ -139,8 +139,8 @@ macOS 产物是 `dist/视频转文字.app`，Windows 产物是 `dist/VideoToText
 ## 验证状态（2026-10-30）
 
 - 界面改版（2026-10-30）：macOS Apple Silicon 原生窗口完成浅色 / 深色视觉验收，截图取自真实窗口（`docs/screenshot.png`、`docs/screenshot-dark.png`），不是效果图；源码自检退出码 0；测试共 42 项全部通过（不加载模型，覆盖任务队列与离屏 Qt 界面）。
-- 仓库审查（2026-10-30）：CI 在 push / pull request 时运行测试，只有打 tag 才构建安装包；ffmpeg 下载按 PyPI 公布的 SHA-256 校验；应用版本号统一取自 `pyproject.toml`。
-- 打包：`dist/视频转文字.app` 已用 PyInstaller 6.22.3 重建，自检全项通过（ffmpeg、torch / FunASR / ModelScope、多进程、音频抽取与 M4A、断句标点、Markdown、DOCX、Qt、图标）；ad-hoc 签名 `codesign --verify --deep --strict` 通过；重新启动后确认新工具栏、侧边栏、空状态与底部状态条渲染正常。重新生成的 `VideoToText-macos-arm64.zip` 解压后签名验证与自检同样通过，SHA-256 见 `SHA256SUMS.txt`。
+- 仓库审查（2026-10-30）：CI 在 push / pull request 时于 Ubuntu、macOS arm64、Windows 三平台运行测试，只有打 tag 或手动触发才构建安装包；ffmpeg 下载按 PyPI 公布的 SHA-256 校验；应用版本号统一取自 `pyproject.toml`。
+- 打包：`dist/视频转文字.app` 已用 PyInstaller 6.22.3 按当前 spec 重建（版本号读取自 `pyproject.toml`），自检全项通过（ffmpeg、torch / FunASR / ModelScope、多进程、音频抽取与 M4A、断句标点、Markdown、DOCX、Qt、图标）；ad-hoc 签名 `codesign --verify --deep --strict` 通过；重新启动后确认新工具栏、侧边栏、空状态与底部状态条渲染正常。重新生成的 `VideoToText-macos-arm64.zip` 解压后签名验证与自检同样通过，SHA-256 见 `SHA256SUMS.txt`。
 - 转写内核（2026-10-25）：同一 ASR 内核跑过真实 28 分钟中文音频（396 段，覆盖 98%），以及 29 秒中文口播端到端（md + docx + m4a，3 段，覆盖 85%），取消任务后状态为“已取消”。本次只改界面与队列控制，未改动转写和产物链路；但**尚未用新界面跑真实素材**，界面与队列联动的真实长跑待补。
 - Windows x64：已配置 `.github/workflows/build.yml`，但尚未在 GitHub Actions 实际运行，开发环境也没有 Windows 实机；首次发布前需要在 Windows 上小批量试跑。
 
