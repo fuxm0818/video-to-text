@@ -136,7 +136,7 @@ macOS 产物是 `dist/视频转文字.app`，Windows 产物是 `dist/VideoToText
 - 识别结果覆盖的是“检测到人声”的片段；纯音乐、静音、噪声段不会产生文字，覆盖率会低于 100%。
 - 模型以中文为主，中英混说通常可用；纯英文、强口音、多人抢话、背景噪声大的素材效果会下降。
 - 没有 GPU 加速，使用 CPU。8 核 Apple Silicon 实测约为素材时长的 6–9 倍速（单文件）；并发 2 路可提高总吞吐，但更吃内存（16 GB 建议并发 1–2）。
-- macOS 包只支持 Apple Silicon；Windows 包由 CI 构建，当前主力验证平台是 macOS Apple Silicon，Windows 上的长时间批量任务请在正式使用前先小批量试跑。
+- macOS 包只支持 Apple Silicon；Windows 包由 CI 构建并已跑通打包自检，但没有 Windows 实机验收，长时间批量任务请在正式使用前先小批量试跑。
 
 ## 验证状态（2026-10-30）
 
@@ -144,7 +144,8 @@ macOS 产物是 `dist/视频转文字.app`，Windows 产物是 `dist/VideoToText
 - 仓库审查（2026-10-30）：CI 在 push / pull request 时于 Ubuntu、macOS arm64、Windows 三平台运行测试，只有打 tag 或手动触发才构建安装包；ffmpeg 下载按 PyPI 公布的 SHA-256 校验；应用版本号统一取自 `pyproject.toml`。
 - 打包：`dist/视频转文字.app` 已用 PyInstaller 6.22.3 按当前 spec 重建（版本号读取自 `pyproject.toml`），自检全项通过（ffmpeg、torch / FunASR / ModelScope、多进程、音频抽取与 M4A、断句标点、Markdown、DOCX、Qt、图标）；ad-hoc 签名 `codesign --verify --deep --strict` 通过；重新启动后确认新工具栏、侧边栏、空状态与底部状态条渲染正常。重新生成的 `VideoToText-macos-arm64.zip` 解压后签名验证与自检同样通过，SHA-256 见 `SHA256SUMS.txt`。
 - 转写内核（2026-10-25）：同一 ASR 内核跑过真实 28 分钟中文音频（396 段，覆盖 98%），以及 29 秒中文口播端到端（md + docx + m4a，3 段，覆盖 85%），取消任务后状态为“已取消”。本次只改界面与队列控制，未改动转写和产物链路；但**尚未用新界面跑真实素材**，界面与队列联动的真实长跑待补。
-- Windows x64：已配置 `.github/workflows/build.yml`，但尚未在 GitHub Actions 实际运行，开发环境也没有 Windows 实机；首次发布前需要在 Windows 上小批量试跑。
+- CI 全量构建（2026-10-30，[run 40994108980](https://github.com/fuxm0818/video-to-text/actions/runs/40994108980)）：手动触发后三平台测试与 macOS / Windows 打包全部成功，`release` 按设计跳过（未打 tag）。CI 产出的 macOS 包版本号 `0.1.0`、ad-hoc 签名、`--self-test` 全项通过；Windows 包 `self-test` 退出码 0，包内含 `VideoToText.exe`、`ffmpeg.exe`、`Qt6Core.dll` 与 `plugins/platforms/qwindows.dll`，下载后 SHA-256 与 CI 记录一致（`1D6F81DB…019392D`）。
+- Windows x64：打包链路已在 GitHub Actions 实际跑通，但本机没有 Windows 实机，**尚未做真人交互与长批量验收**；正式使用前请先小批量试跑。
 
 ## 项目结构
 
