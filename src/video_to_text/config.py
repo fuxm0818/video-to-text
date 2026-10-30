@@ -31,6 +31,7 @@ def defaults() -> dict:
         "formats": ["md", "docx"],
         "audio_format": "m4a",
         "workers": core.default_workers(),
+        "force": False,
     }
 
 
@@ -50,6 +51,7 @@ def _valid(data: dict) -> dict:
         out["workers"] = max(1, min(4, workers))
     except (TypeError, ValueError):
         pass
+    out["force"] = data.get("force") is True
     if not out["formats"] and out["audio_format"] == "none":
         out["formats"] = ["md"]
     return out

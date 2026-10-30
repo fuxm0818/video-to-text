@@ -16,9 +16,16 @@ packaging/ffmpeg/*
 output/
 *.log
 
+# Test and lint caches
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
 # Release artifacts
 release/
 VideoToText-*.zip
+*.dmg
 SHA256SUMS.txt
 
 # OS

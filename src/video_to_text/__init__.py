@@ -1,4 +1,4 @@
-"""Video to Text: local video/audio transcription with a small web UI."""
+"""Video to Text: local video/audio transcription with a native desktop UI and CLI."""
 
 __version__ = "0.1.0"
 APP_NAME = "Video to Text"

@@ -1,12 +1,16 @@
 # -*- mode: python ; coding: utf-8 -*-
 """PyInstaller build for Video to Text (macOS app bundle / Windows folder)."""
 import sys
+import tomllib
 from pathlib import Path
 
 from PyInstaller.utils.hooks import collect_data_files, collect_submodules
 
 ROOT = Path(SPECPATH).parent
 SRC = ROOT / "src"
+VERSION = tomllib.loads((ROOT.parent / "pyproject.toml").read_text(encoding="utf-8"))[
+    "project"
+]["version"]
 ASSETS = SRC / "video_to_text" / "assets"
 FFMPEG = ROOT / "packaging" / "ffmpeg"
 ICON = ROOT / "packaging" / ("icon.ico" if sys.platform == "win32" else "icon.icns")
@@ -91,11 +95,11 @@ if sys.platform == "darwin":
         info_plist={
             "CFBundleDisplayName": "视频转文字",
             "CFBundleName": "视频转文字",
-            "CFBundleShortVersionString": "0.1.0",
-            "CFBundleVersion": "0.1.0",
+            "CFBundleShortVersionString": VERSION,
+            "CFBundleVersion": VERSION,
             "NSHighResolutionCapable": True,
             "LSMinimumSystemVersion": "14.0",
             "LSApplicationCategoryType": "public.app-category.productivity",
-            "NSHumanReadableCopyright": "MIT License",
+            "NSHumanReadableCopyright": "Copyright © 2026 Fu Xiangming. MIT License.",
         },
     )

@@ -8,6 +8,7 @@ subprocess, so it is an aggregated work rather than a linked library.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import platform
 import stat
@@ -31,7 +32,7 @@ def wheel_tag() -> str:
     raise SystemExit("只支持 macOS 与 Windows；其他平台请自行安装 ffmpeg。")
 
 
-def find_wheel() -> tuple[str, str]:
+def find_wheel() -> tuple[str, str, str]:
     url = f"https://pypi.org/pypi/imageio-ffmpeg/{VERSION}/json"
     with urllib.request.urlopen(url, timeout=60) as resp:
         data = json.load(resp)
@@ -39,11 +40,14 @@ def find_wheel() -> tuple[str, str]:
     for item in data.get("urls", []):
         name = item.get("filename", "")
         if name.endswith(".whl") and tag in name:
-            return item["url"], name
+            digest = (item.get("digests") or {}).get("sha256")
+            if not digest:
+                raise SystemExit(f"PyPI 没有提供 {name} 的 SHA-256，拒绝未校验下载")
+            return item["url"], name, digest
     raise SystemExit(f"imageio-ffmpeg {VERSION} 没有 {tag} 的 wheel")
 
 
-def download(url: str, dest: Path) -> None:
+def download(url: str, dest: Path, sha256: str) -> None:
     mirrors = [url]
     if url.startswith("https://files.pythonhosted.org/"):
         mirrors.append(url.replace("https://files.pythonhosted.org/",
@@ -52,12 +56,19 @@ def download(url: str, dest: Path) -> None:
     for candidate in mirrors:
         try:
             print(f"下载 {candidate}")
+            digest = hashlib.sha256()
             with urllib.request.urlopen(candidate, timeout=180) as resp, dest.open("wb") as fh:
                 while True:
                     block = resp.read(1 << 20)
                     if not block:
                         break
+                    digest.update(block)
                     fh.write(block)
+            if digest.hexdigest() != sha256:
+                dest.unlink(missing_ok=True)
+                raise ValueError(
+                    f"SHA-256 不匹配（期望 {sha256}，实际 {digest.hexdigest()}）"
+                )
             return
         except Exception as exc:  # SSL resets are common on some networks
             last = exc
@@ -90,10 +101,10 @@ def main() -> int:
         return 0
 
     DEST_DIR.mkdir(parents=True, exist_ok=True)
-    url, name = find_wheel()
+    url, name, sha256 = find_wheel()
     with tempfile.TemporaryDirectory(prefix="v2t-ffmpeg-") as tmp:
         wheel = Path(tmp) / name
-        download(url, wheel)
+        download(url, wheel, sha256)
         extract(wheel, dest)
 
     if sys.platform != "win32":

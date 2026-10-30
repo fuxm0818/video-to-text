@@ -1,4 +1,4 @@
-"""Background transcription jobs for the local web UI."""
+"""Background transcription jobs for the desktop window."""
 from __future__ import annotations
 
 import multiprocessing as mp
@@ -18,11 +18,33 @@ from . import core
 STAGE_LABELS = {
     "start": "准备中",
     "extract": "抽取音频",
-    "asr": "语音识别",
+    "asr": "识别中",
     "punctuate": "整理文稿",
     "audio": "导出音频",
     "write": "写入文稿",
 }
+
+MODEL_TOTAL_BYTES = 2_100_000_000  # 名义总量，用于下载进度估算（约 2.1 GB）
+
+
+def model_cache_dir() -> Path:
+    return Path(os.environ.get("MODELSCOPE_CACHE") or Path.home() / ".cache" / "modelscope")
+
+
+def model_cache_bytes() -> int:
+    """ModelScope 缓存目录当前大小；只用于显示下载进度，取不到就返回 0。"""
+    base = model_cache_dir()
+    total = 0
+    try:
+        for root, _dirs, files in os.walk(base):
+            for name in files:
+                try:
+                    total += os.path.getsize(os.path.join(root, name))
+                except OSError:
+                    pass
+    except OSError:
+        return total
+    return total
 
 
 @dataclass
@@ -41,6 +63,8 @@ class Task:
     outputs: dict[str, str] = field(default_factory=dict)
     warnings: list[str] = field(default_factory=list)
     reused: bool = False
+    cover: float = 0.0
+    error_detail: str = ""
 
     def to_dict(self) -> dict:
         return {
@@ -58,6 +82,8 @@ class Task:
             "outputs": self.outputs,
             "warnings": self.warnings,
             "reused": self.reused,
+            "cover": self.cover,
+            "error_detail": self.error_detail,
         }
 
 
@@ -152,6 +178,8 @@ class JobManager:
             "message": "",
             "needs_model": False,
             "model_state": "",
+            "model_bytes": 0,
+            "model_total_bytes": MODEL_TOTAL_BYTES,
         }
         self._thread: threading.Thread | None = None
         self._procs: list[mp.Process] = []
@@ -159,6 +187,7 @@ class JobManager:
         self._cancel_evt = None
         self._temp_prefix = ""
         self._last_output_dir = ""
+        self._last_model_poll = 0.0
 
     # ------------------------------------------------------------- tasks
 
@@ -227,7 +256,7 @@ class JobManager:
     # --------------------------------------------------------------- job
 
     def start(self, output_dir: Path, formats: list[str], audio_format: str,
-              workers: int, force: bool) -> None:
+              workers: int, force: bool, only_ids: list[str] | None = None) -> None:
         formats = sorted(set(formats) & core.TEXT_FORMATS)
         if not formats and audio_format == "none":
             raise RuntimeError("请至少选择一种输出内容")
@@ -238,25 +267,33 @@ class JobManager:
                 raise RuntimeError("已有转写任务在运行")
             if not self._order:
                 raise RuntimeError("请先选择视频或音频文件")
+            candidate_ids = [
+                tid for tid in (self._order if only_ids is None else only_ids)
+                if tid in self._tasks
+            ]
+            if not candidate_ids:
+                raise RuntimeError("请先选择视频或音频文件")
             output_dir = Path(output_dir).expanduser().resolve()
             output_dir.mkdir(parents=True, exist_ok=True)
             self._last_output_dir = str(output_dir)
             stems = core.assign_stems(
-                [self._tasks[tid].path for tid in self._order], output_dir
+                [self._tasks[tid].path for tid in candidate_ids], output_dir
             )
             pending: list[Task] = []
             skipped = 0
             needs_model = False
-            for task_id in self._order:
+            for task_id in candidate_ids:
                 task = self._tasks[task_id]
                 task.stem = stems[str(task.path.resolve())]
                 task.status = "queued"
                 task.stage = ""
                 task.message = ""
                 task.error = ""
+                task.error_detail = ""
                 task.outputs = {}
                 task.warnings = []
                 task.reused = False
+                task.cover = 0.0
                 task.elapsed = 0.0
                 task.started_at = 0.0
                 md = output_dir / f"{task.stem}.md"
@@ -294,7 +331,7 @@ class JobManager:
                 "state": "running" if pending else "done",
                 "running": bool(pending),
                 "canceling": False,
-                "total": len(self._order),
+                "total": len(candidate_ids),
                 "completed": skipped,
                 "failed": 0,
                 "skipped": skipped,
@@ -304,6 +341,8 @@ class JobManager:
                 "message": "准备开始" if pending else "所选文件的输出都已存在，无需重跑",
                 "needs_model": needs_model,
                 "model_state": "pending" if needs_model else "",
+                "model_bytes": 0,
+                "model_total_bytes": MODEL_TOTAL_BYTES,
             }
             self._cancel_requested.clear()
             self._cancel_evt = None
@@ -357,6 +396,15 @@ class JobManager:
             self._logs.append(entry)
         core.append_log(("[%s] " % task if task else "") + message)
 
+    def _poll_model_bytes(self, force: bool = False) -> None:
+        now = time.time()
+        if not force and now - self._last_model_poll < 1.0:
+            return
+        self._last_model_poll = now
+        size = model_cache_bytes()
+        with self._lock:
+            self._job["model_bytes"] = max(int(self._job.get("model_bytes") or 0), size)
+
     def _prepare_models(self, ctx) -> bool:
         with self._lock:
             self._job["model_state"] = "checking"
@@ -372,6 +420,7 @@ class JobManager:
                 with self._lock:
                     self._job["model_state"] = "canceled"
                 return False
+            self._poll_model_bytes()
             try:
                 kind, payload = event_q.get(timeout=0.4)
             except queue.Empty:
@@ -388,6 +437,7 @@ class JobManager:
                     if self._job["model_state"] != "downloading" and "下载模型" in payload:
                         self._job["model_state"] = "downloading"
                     self._job["message"] = payload
+                self._poll_model_bytes(force=True)
                 self._log(payload)
             elif kind == "done":
                 proc.join(timeout=5)
@@ -525,6 +575,7 @@ class JobManager:
                 task.outputs = event.get("outputs") or {}
                 task.warnings = list(event.get("warnings") or [])
                 task.reused = bool(event.get("reused"))
+                task.cover = float(event.get("cover") or 0)
                 task.message = "完成（复用已有文稿）" if task.reused else "完成"
                 self._job["completed"] += 1
                 self._job["message"] = f"{task.path.name}：完成"
@@ -540,6 +591,7 @@ class JobManager:
                 task.status = "failed"
                 task.stage = ""
                 task.error = event.get("error", "未知错误")
+                task.error_detail = event.get("detail") or ""
                 task.message = "失败"
                 self._job["completed"] += 1
                 self._job["failed"] += 1

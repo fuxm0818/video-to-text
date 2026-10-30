@@ -7,7 +7,7 @@ name = "video-to-text"
 version = "0.1.0"
 description = "本地视频/音频转写：FunASR 语音识别，导出 Markdown、Word 和音频"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.12,<3.13"
 license = "MIT"
 authors = [{ name = "Fu Xiangming" }]
 keywords = ["asr", "funasr", "transcription", "video", "speech-to-text"]
